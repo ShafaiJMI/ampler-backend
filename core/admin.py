@@ -26,7 +26,7 @@ class SellInline(admin.TabularInline):
 
 
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ['invoice_number','carrier_charge','advance_recived','bill_amount','total_landed_cost']
+    list_display = ['invoice_number','seller','buyer','carrier_charge','advance_recived','bill_amount','landed_cost']
     list_editable = ['carrier_charge','advance_recived']
     inlines = [
         SellInline,

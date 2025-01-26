@@ -28,6 +28,15 @@ def invoices(request):
 
 @api_view(['GET'])
 @csrf_exempt
+def invoicesdetail(request,inv):
+    if request.method == 'GET':
+        invoice_list = Invoice.objects.get(invoice_number=inv)
+        serializer = InvoiceSerializer(invoice_list, many=False)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@csrf_exempt
 def Buyers(request):
     if request.method == 'GET':
         buyer_list = Buyer.objects.all()
@@ -38,6 +47,15 @@ def Buyers(request):
 @api_view(['GET'])
 @csrf_exempt
 def Sellers(request):
+    if request.method == 'GET':
+        sellers_list = Seller.objects.all()
+        serializer = SellerSerializer(sellers_list, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@csrf_exempt
+def Analytics(request):
     if request.method == 'GET':
         sellers_list = Seller.objects.all()
         serializer = SellerSerializer(sellers_list, many=True)
