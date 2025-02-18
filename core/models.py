@@ -35,9 +35,9 @@ class MetalDetails(models.Model):
         ('dust', 'Dust'),
     ]
     metal_type = models.CharField(max_length=20)
-    weight = models.DecimalField(max_digits=10, decimal_places=2)  # e.g., in grams or kilograms
-    rate = models.DecimalField(max_digits=10, decimal_places=2)    # e.g., per gram or kilogram
-    amount = models.DecimalField(max_digits=15, decimal_places=2)  # Calculated field
+    weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # e.g., in grams or kilograms
+    rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)    # e.g., per gram or kilogram
+    amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)  # Calculated field
 
     class Meta:
         abstract = True  # This makes MetalDetails an abstract base class
@@ -60,9 +60,9 @@ class Invoice(models.Model):
     petrol = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) 
     toll_tax = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     # Final Amounts
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Total Amount of all Items i.e Items Weight x Rate
     miscellaneous = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    bill_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Total sale amount (after oversize deduction)
+    bill_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Total Sale Amount (after oversize deduction)
     landed_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) #
     benifit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True) # Benifit = bill - total
     advance_paid = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -87,51 +87,50 @@ class Invoice(models.Model):
         total = sum(field or 0 for field in fields)
         return total
 
+    def calculate_total(self):
+        """Calculate total amount from all purchase items."""
+        self.total_amount = sum(purchase.amount for purchase in self.purchases.all())
+
     def calculate_bill_amount(self):
-        if self.total_amount is None or self.oversize is None:
-            return None
-        return self.total_amount - (self.oversize or 0)
+        """Calculate total sale amount and deduct oversize if applicable."""
+        total_sale = sum(sale.amount for sale in self.sales.all())
+        return total_sale - (self.oversize or 0)
 
     def calculate_landedcost(self):
-        total = 0
-        return total
+        """Calculate total landed cost (total amount + miscellaneous)."""
+        return (self.total_amount or 0) + (self.miscellaneous or 0)
 
     def calculate_benifit(self):
-        pass
+        """Calculate benefit as the difference between bill amount and landed cost."""
+        return (self.bill_amount or 0) - (self.landed_cost or 0)
 
     #add features to drop related tables when invoice creation fails
     def create_default_items(self):
         """Creates default items with zero weight for both purchase and sale."""
         metals = ['heavy', 'dehati', 'light', 'teena', 'CI', 'dust']
+
         for metal in metals:
-            purchase_item = Purchase.objects.create(metal_type=metal, date=self.date)
-            sale_item = Sale.objects.create(metal_type=metal, date=self.date)
+            purchase_item = Purchase.objects.create(metal_type=metal)
+            sale_item = Sell.objects.create(metal_type=metal)
             self.purchases.add(purchase_item)
             self.sales.add(sale_item)
     
-    def save(self,*args, **kwargs):
-        self.miscellaneous = self.calculate_miscellaneous()
-        #self.total_landed_cost = self.calculate_landedcost()
-        #self.bill_amount = self.calculate_bill_amount()
-        #self.benifit = self.calculate_benifit()
+
+    def save(self, *args, **kwargs):
         is_new = self.pk is None
-        super().save(*args,**kwargs)
+        
+        super().save(*args, **kwargs)
         if is_new and not self.invoice_number:
             self.invoice_number = self.generate_invoice_number()
-            super().save(update_fields=["invoice_number"])  # Save only the updated field
-
+            
+            super().save(update_fields=["invoice_number"])   # Save only the updated field
+        
 
 class Purchase(MetalDetails):
     invoice = models.ForeignKey(Invoice, related_name="purchases", on_delete=models.CASCADE, null=True,blank=True)
     date = models.DateField(auto_now_add=True,null=True,blank=True)
-    
-    class Meta:
-        verbose_name_plural = "purchases"
 
 
 class Sell(MetalDetails):
     invoice = models.ForeignKey(Invoice, related_name="sales", on_delete=models.CASCADE, null=True,blank=True)
     date = models.DateField(auto_now_add=True,null=True,blank=True)
-
-    class Meta:
-        verbose_name_plural = "sales"

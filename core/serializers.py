@@ -51,9 +51,16 @@ class InvoiceSerializer(serializers.ModelSerializer):
             
             # Create purchases and sales items
             for purchase_data in purchases_data:
+                purchase_data['amount'] = purchase_data['weight'] * purchase_data['rate']
                 Purchase.objects.create(invoice=invoice, **purchase_data)
             for sale_data in sales_data:
+                sale_data['amount'] = sale_data['weight'] * sale_data['rate']
                 Sell.objects.create(invoice=invoice, **sale_data)
+            invoice.total_amount = sum(item['weight'] * item['rate'] for item in purchases_data)
+            invoice.bill_amount = sum(item['weight'] * item['rate'] for item in sales_data) - (invoice.oversize or 0)
+            invoice.miscellaneous = invoice.calculate_miscellaneous()
+            invoice.landed_cost = invoice.calculate_landedcost()
+            invoice.benifit = invoice.calculate_benifit()
 
         return invoice
     

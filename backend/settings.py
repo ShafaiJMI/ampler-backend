@@ -31,10 +31,10 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),  # Short-lived access token
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Longer refresh token
-    'ROTATE_REFRESH_TOKENS': True,                 # Issue a new refresh token on refresh
-    'BLACKLIST_AFTER_ROTATION': True,              # Blacklist old refresh tokens
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': True,  # Critical for refresh token rotation
+    'BLACKLIST_AFTER_ROTATION': True,  # Blacklist old refresh tokens
 }
 
 REST_FRAMEWORK = {
@@ -54,6 +54,7 @@ CORS_ORIGIN_WHITELIST = [
 
 INSTALLED_APPS = [
     'core',
+    'analytics',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
